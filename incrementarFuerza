@@ -1,0 +1,16 @@
+var jugador= {
+ fuerza: 1,
+  incrementarFuerza: function() {
+   this.fuerza = this.fuerza + 1;    
+  },
+   valorFuerza: function() {
+
+    console.log(this.fuerza);
+   }
+  
+}
+
+jugador.valorFuerza()
+jugador.incrementarFuerza();
+jugador.valorFuerza();
+jugador.incrementarFuerza()

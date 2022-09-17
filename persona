@@ -1,0 +1,22 @@
+var persona ={
+  nombre: "Joel",
+  edad: 34,
+  sueldo: 3500,
+
+sueldoSemanal: function(){
+return this.sueldo * 7
+   
+},
+  
+  saludos: function () {
+
+  console.log("Saludos a todos");
+
+  
+  }
+
+  
+}
+persona.saludos()
+console.log(persona.sueldo)
+console.log(persona.sueldoSemanal()

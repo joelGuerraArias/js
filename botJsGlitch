@@ -1,0 +1,136 @@
+
+
+const express = require("express");
+const bodyParser = require("body-parser");
+const axios = require("axios");
+const { Configuration, OpenAIApi } = require("openai");
+
+const app = express();
+app.use(bodyParser.json());
+
+const WHATSAPP_API_URL = "https://graph.facebook.com/v19.0/379705698549801/messages";
+const ACCESS_TOKEN = "EAAN2aQU05TgBO8j2abSqDafSont6RXBSBWNpqBCkJVdMPaWUxIsWF9XFW4SNkwFj1IiLJfDY3WhVI2EZA6KD1ZCaYiOAZBi5K4ihDga7bFIM6vG6e0h9xbEgaw2YYzZAvZAXoxrxCCvlc1lfcjjlMxpdlRP9ZA2IFNQJ8loY07lZBKrteaXQIst21WlQ9YkMiidheDNKNcLXK0C7ngl";
+const VERIFY_TOKEN = "mi_verify_token_secreto";
+const OPENAI_API_KEY = "sk-proj-w6VLpJ91gAQzHM05N2rFT3BlbkFJwZsrQ7ELTEdv1EFyZQgI";
+
+const configuration = new Configuration({
+  apiKey: OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
+
+app.get("/", (req, res) => {
+  res.send("Servidor funcionando correctamente");
+});
+
+app.post("/webhook", async (req, res) => {
+  try {
+    const data = req.body;
+    console.log("Received webhook data: ", JSON.stringify(data, null, 2));
+
+    if (data.entry && data.entry[0].changes && data.entry[0].changes[0].value.messages) {
+      const messages = data.entry[0].changes[0].value.messages;
+      for (let message of messages) {
+        if (message.type === "text") {
+          const senderId = message.from;
+          const messageText = message.text.body;
+          console.log(`Message from ${senderId}: ${messageText}`);
+          const responseText = await getAutoResponse(messageText);
+          console.log(`Response text: ${responseText}`);
+          await sendWhatsappMessage(senderId, responseText);
+        }
+      }
+    }
+    res.sendStatus(200);
+  } catch (error) {
+    console.error("Error: ", error);
+    res.sendStatus(500);
+  }
+});
+
+app.get("/webhook", (req, res) => {
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+  console.log(`Mode: ${mode}, Token: ${token}, Challenge: ${challenge}`);
+  if (mode && token === VERIFY_TOKEN) {
+    res.status(200).send(challenge);
+  } else {
+    console.log("Verification token mismatch");
+    res.sendStatus(403);
+  }
+});
+
+async function sendWhatsappMessage(recipientId, messageText) {
+  try {
+    const response = await axios.post(
+      WHATSAPP_API_URL,
+      {
+        messaging_product: "whatsapp",
+        to: recipientId,
+        type: "text",
+        text: {
+          body: messageText
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+    console.log("Send WhatsApp Message Response: ", response.data);
+  } catch (error) {
+    console.error("Error sending WhatsApp message: ", error);
+  }
+}
+
+async function getAutoResponse(userInput) {
+  try {
+    const prompt = `Eres un vendedor de autos experto. Responde a las siguientes preguntas con la mayor precisión posible.\n\nCliente: ${userInput}\nVendedor: `;
+    const response = await openai.createCompletion({
+      model: "text-davinci-003",
+      prompt: prompt,
+      max_tokens: 150,
+      n: 1,
+      stop: ["\n"]
+    });
+    return response.data.choices[0].text.trim();
+  } catch (error) {
+    console.error("Error getting response from OpenAI: ", error);
+    return "Lo siento, hubo un error al procesar tu solicitud.";
+  }
+}
+
+const listener = app.listen(process.env.PORT || 3000, () => {
+  console.log("Your app is listening on port " + listener.address().port);
+});
+
+
+json pack
+
+{
+  "name": "hello-express",
+  "version": "0.0.1",
+  "description": "A simple Node app built on Express, instantly up and running.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "body-parser": "^1.19.0",
+    "axios": "^0.21.1",
+    "openai": "^2.0.0"
+  },
+  "engines": {
+    "node": "14.x"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch",
+    "express"
+  ]
+}
+
